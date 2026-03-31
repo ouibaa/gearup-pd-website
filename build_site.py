@@ -52,15 +52,53 @@ def note_href(name: str) -> str:
     return f'{slug}.html'
 
 
+def image_href(name: str) -> str:
+    return f'images/{name}'
+
+
 def markdown_inline(text: str) -> str:
     text = html.escape(text)
+    text = re.sub(
+        r'!\[\[([^\]]+)\]\]',
+        lambda m: f'<img class="inline-image" src="{image_href(m.group(1))}" alt="{html.escape(Path(m.group(1)).stem)}">',
+        text,
+    )
+    text = re.sub(r'&lt;br\s*/?&gt;', '<br>', text, flags=re.IGNORECASE)
     text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
     text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
     text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
     text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', lambda m: f'<a href="{note_href(m.group(1))}">{m.group(2)}</a>', text)
     text = re.sub(r'\[\[([^\]]+)\]\]', lambda m: f'<a href="{note_href(m.group(1))}">{m.group(1)}</a>', text)
     text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', text)
+    bare_url = re.compile(r'(?<!["\'>])(https?://[^\s<]+)')
+    text = bare_url.sub(r'<a href="\1">\1</a>', text)
+    text = re.sub(r'(?<![\w.])([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})', r'<a href="mailto:\1">\1</a>', text)
     return text
+
+
+def split_table_row(line: str) -> list[str]:
+    stripped = line.strip().strip('|')
+    return [cell.strip() for cell in stripped.split('|')]
+
+
+def is_table_separator(line: str) -> bool:
+    cells = split_table_row(line)
+    return bool(cells) and all(re.fullmatch(r':?-{3,}:?', cell) for cell in cells)
+
+
+def render_table(table_lines: list[str]) -> str:
+    headers = split_table_row(table_lines[0])
+    body_lines = table_lines[2:] if len(table_lines) > 1 and is_table_separator(table_lines[1]) else table_lines[1:]
+    thead = ''.join(f'<th>{markdown_inline(cell)}</th>' for cell in headers)
+    rows = []
+    for line in body_lines:
+        cells = split_table_row(line)
+        if not any(cells):
+            continue
+        row = ''.join(f'<td>{markdown_inline(cell)}</td>' for cell in cells)
+        rows.append(f'<tr>{row}</tr>')
+    tbody = ''.join(rows)
+    return f'<div class="table-wrap"><table><thead><tr>{thead}</tr></thead><tbody>{tbody}</tbody></table></div>'
 
 
 def markdown_to_html(md: str) -> str:
@@ -68,6 +106,7 @@ def markdown_to_html(md: str) -> str:
     blocks: list[str] = []
     paragraph: list[str] = []
     list_items: list[str] = []
+    table_lines: list[str] = []
 
     def flush_paragraph() -> None:
         nonlocal paragraph
@@ -82,12 +121,26 @@ def markdown_to_html(md: str) -> str:
             blocks.append(f'<ul>{items}</ul>')
             list_items = []
 
+    def flush_table() -> None:
+        nonlocal table_lines
+        if table_lines:
+            blocks.append(render_table(table_lines))
+            table_lines = []
+
     for raw in lines:
         line = raw.rstrip()
-        if not line.strip():
+        stripped = line.strip()
+        if not stripped:
             flush_paragraph()
             flush_list()
+            flush_table()
             continue
+        if '|' in stripped and stripped.count('|') >= 2:
+            flush_paragraph()
+            flush_list()
+            table_lines.append(stripped)
+            continue
+        flush_table()
         if line.startswith('#'):
             flush_paragraph()
             flush_list()
@@ -104,6 +157,7 @@ def markdown_to_html(md: str) -> str:
 
     flush_paragraph()
     flush_list()
+    flush_table()
     return '\n'.join(blocks)
 
 
@@ -309,6 +363,11 @@ def build_blog_index(posts: list[dict]) -> str:
 
 def copy_static_assets() -> None:
     IMAGES_OUT.mkdir(parents=True, exist_ok=True)
+    images_src = CONTENT / 'Images'
+    if images_src.exists():
+        for path in images_src.iterdir():
+            if path.is_file():
+                shutil.copy2(path, IMAGES_OUT / path.name)
     if LOGO_PNG.exists():
         shutil.copy2(LOGO_PNG, IMAGES_OUT / 'gearup_logo.png')
     if NEURA_LOGO.exists():
@@ -434,6 +493,27 @@ a:hover { text-decoration: underline; }
 }
 .markdown-module h1 { margin-top: 0; }
 .markdown-module h2 { scroll-margin-top: 24px; }
+.inline-image {
+  max-width: 200px; width: 100%; height: auto; display: block;
+  border-radius: 18px; object-fit: cover;
+}
+.table-wrap {
+  width: 100%; overflow-x: auto; margin: 1rem 0;
+}
+.table-wrap table {
+  width: 100%; border-collapse: collapse; min-width: 760px;
+}
+.table-wrap th, .table-wrap td {
+  border: 1px solid var(--line); padding: 14px; text-align: left; vertical-align: top;
+}
+.table-wrap th {
+  background: #eef4ff; font-weight: 700;
+}
+.table-wrap tr:nth-child(even) td {
+  background: #fbfdff;
+}
+.table-wrap p:first-child { margin-top: 0; }
+.table-wrap p:last-child { margin-bottom: 0; }
 code { background: #eff4fb; padding: 2px 7px; border-radius: 8px; }
 @media (max-width: 980px) {
   .app-shell { grid-template-columns: 1fr; }
