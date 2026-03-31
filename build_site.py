@@ -167,13 +167,7 @@ def collect_posts() -> list[dict]:
         stat = path.stat()
         created = getattr(stat, 'st_birthtime', stat.st_mtime)
         text = read_text(path).strip()
-        title = None
-        for line in text.splitlines():
-            if line.strip().startswith('#'):
-                title = re.sub(r'^#+\s*', '', line.strip())
-                break
-        if not title:
-            title = path.stem
+        title = path.stem
         excerpt = ''
         for line in text.splitlines():
             clean = line.strip()
@@ -286,12 +280,24 @@ def build_landing(posts: list[dict]) -> str:
     return page_shell(SITE_TITLE, body, posts, current='index', depth=0)
 
 
+def strip_leading_heading(md: str) -> str:
+    lines = md.replace('\r\n', '\n').split('\n')
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if lines and lines[0].lstrip().startswith('#'):
+        lines.pop(0)
+        while lines and not lines[0].strip():
+            lines.pop(0)
+    return '\n'.join(lines)
+
+
 def build_post(post: dict, posts: list[dict]) -> str:
+    post_content = markdown_to_html(strip_leading_heading(post['content']))
     body = f'''
     <article class="content-card blog-post">
       <p class="eyebrow">Blog update · {post['created_label']}</p>
-      {markdown_to_html(post['content'])}
-      <p class="muted">File source: {html.escape(post['path'].name)}</p>
+      <h1><strong>{html.escape(post['title'])}</strong></h1>
+      {post_content}
     </article>
     '''
     return page_shell(post['title'], body, posts, current=post['slug'], depth=1)
