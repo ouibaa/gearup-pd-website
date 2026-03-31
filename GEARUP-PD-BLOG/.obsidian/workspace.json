@@ -62,37 +62,9 @@
               "icon": "lucide-file",
               "title": "GEARUP-PD"
             }
-          },
-          {
-            "id": "56834d7d1da12838",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "About.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "About"
-            }
-          },
-          {
-            "id": "51a27795967eaaf9",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Blog/New Website.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "New Website"
-            }
           }
         ],
-        "currentTab": 5
+        "currentTab": 3
       },
       {
         "id": "1d16ecce76c2fd21",
@@ -270,16 +242,20 @@
       "bases:Create new base": false
     }
   },
-  "active": "51a27795967eaaf9",
+  "active": "b564a26c29961237",
   "lastOpenFiles": [
     "About.md",
+    "Untitled",
+    "Images/Pasted image 20260331160516.png",
+    "Images/Pasted image 20260331160436.png",
+    "Images/Pasted image 20260331160327.png",
+    "Blog/New Website.md",
     "GEARUP-PD.md",
     "Resources.md",
     "Sign Up.md",
     "Images/neura_logo.webp",
     "Images/gearup_logo.png",
     "Images",
-    "Blog/New Website.md",
     "Blog"
   ]
 }
