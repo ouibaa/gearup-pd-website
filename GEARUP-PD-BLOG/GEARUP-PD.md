@@ -18,7 +18,7 @@ For supporting documents, including **participant information** and **consent-re
 
 ## About the study
 
-GEARUP-PD is being led from **Neuroscience Research Australia (NeuRA)**.
+GEARUP-PD is being led from **Neuroscience Research Australia (NeuRA)**. 
 
 The **Central Principal Investigator** for the project is **Professor Carolyn Sue**.
 
